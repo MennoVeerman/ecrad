@@ -231,8 +231,8 @@ contains
         if (cos_zenith_angle(icol) > 0.0_jprb) then
           dz_tan_zenith_angle = self%dz(ilay) &
                &   * sqrt(1.0_jprb-cos_zenith_angle(icol)*cos_zenith_angle(icol))/cos_zenith_angle(icol)
-          xoffs(icol) = -(cos(azimuth_angle(icol)) * dz_tan_zenith_angle) / self%dx(icol)
-          yoffs(icol) = -(sin(azimuth_angle(icol)) * dz_tan_zenith_angle) / self%dy(jy)
+          xoffs(icol) = (sin(azimuth_angle(icol)) * dz_tan_zenith_angle) / self%dx(icol)
+          yoffs(icol) = (cos(azimuth_angle(icol)) * dz_tan_zenith_angle) / self%dy(jy)
         else
           xoffs(icol) = 0.0_jprb
           yoffs(icol) = 0.0_jprb
