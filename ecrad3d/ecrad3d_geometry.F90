@@ -224,7 +224,8 @@ contains
     integer :: jx, jy, jcol, jspec
     
     integer :: ix1(ncol), ix2(ncol), iy1(ncol), iy2(ncol)
-    
+
+    !$OMP PARALLEL DO PRIVATE(jy,jx) 
     do jy = 1,self%ny
       do jx = 1,self%nx
         icol = (jy-1)*self%nx + jx
@@ -246,7 +247,8 @@ contains
         yoffs(icol) = yoffs(icol) - floor(yoffs(icol))
       end do
     end do
-    
+    !$OMP END PARALLEL DO 
+
     if (self%boundary_conditions == IBoundaryPeriodic) then
       ! do jcol = 1,self%ncol
       !   if (ix1(jcol) < 1) then
@@ -270,16 +272,19 @@ contains
       !     iy2(jcol) = iy2(jcol)-self%ny
       !   end if
       ! end do
+      !$OMP PARALLEL DO PRIVATE(jcol) 
       do jcol = 1,self%ncol
         ix1(jcol) = modulo(ix1(jcol)-1, self%nx)+1
         ix2(jcol) = modulo(ix2(jcol)-1, self%nx)+1
         iy1(jcol) = modulo(iy1(jcol)-1, self%ny)+1
         iy2(jcol) = modulo(iy2(jcol)-1, self%ny)+1
       end do
+      !$OMP END PARALLEL DO 
     else
       error stop 'BC not understood'
     end if
 
+    !$OMP PARALLEL DO PRIVATE(jcol,jspec) 
     do jcol = 1,self%ncol
       icol11 = (iy1(jcol)-1)*self%nx + ix1(jcol)
       icol12 = (iy2(jcol)-1)*self%nx + ix1(jcol)
@@ -300,6 +305,7 @@ contains
 !             &                              +          yoffs(jcol) *field_in(icol11,jspec) )
       end do
     end do
+    !$OMP END PARALLEL DO
     !field_out = field_in
 
   end subroutine advect
@@ -353,13 +359,17 @@ contains
     
     do jspec = 1,nspec
       ! East-west diffusion
+      !$OMP PARALLEL DO PRIVATE(jcol)
       do jcol = 1,self%ncol
         scale = exchange_factor * self%dz(ilay) / self%dx(jcol)
         frac  = min(scale*scale, exchange_limit)
         field_tmp(jcol) = (1.0_jprb - frac) * field_in(jcol,jspec) &
              &          +  0.5_jprb * frac * (field_in(self%ieast(jcol),jspec) + field_in(self%iwest(jcol),jspec))
       end do
+      !$OMP END PARALLEL DO
+      
       ! North-south diffusion
+      !$OMP PARALLEL DO PRIVATE(jcol)
       do jcol = 1,self%ncol
         iy = (jcol-1)/self%nx + 1
         scale = exchange_factor * self%dz(ilay) / self%dy(iy)
@@ -367,17 +377,22 @@ contains
         field_out(jcol,jspec) = (1.0_jprb - frac) * field_tmp(jcol) &
              &                +  0.5_jprb * frac * (field_tmp(self%inorth(jcol)) + field_tmp(self%isouth(jcol)))
       end do
+      !$OMP END PARALLEL DO
 
       ! For two or more exchanges
       do jex = 2,n_exchange
         ! East-west diffusion
+        !$OMP PARALLEL DO PRIVATE(jcol)
         do jcol = 1,self%ncol
           scale = exchange_factor * self%dz(ilay) / self%dx(jcol)
           frac  = min(scale*scale, exchange_limit)
           field_tmp(jcol) = (1.0_jprb - frac) * field_out(jcol,jspec) &
                &          +  0.5_jprb * frac * (field_out(self%ieast(jcol),jspec) + field_out(self%iwest(jcol),jspec))
         end do
+        !$OMP END PARALLEL DO
+        
         ! North-south diffusion
+        !$OMP PARALLEL DO PRIVATE(jcol)
         do jcol = 1,self%ncol
           iy = (jcol-1)/self%nx + 1
           scale = exchange_factor * self%dz(ilay) / self%dy(iy)
@@ -385,6 +400,7 @@ contains
           field_out(jcol,jspec) = (1.0_jprb - frac) * field_tmp(jcol) &
                &                +  0.5_jprb * frac * (field_tmp(self%inorth(jcol)) + field_tmp(self%isouth(jcol)))
         end do
+        !$OMP END PARALLEL DO
       end do
       
     end do
