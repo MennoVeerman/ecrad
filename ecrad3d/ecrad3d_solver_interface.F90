@@ -123,6 +123,23 @@ contains
         flux%sw_dn_clear        = sum(flux_dn_diff_top,2) + flux%sw_dn_direct_clear
         flux%sw_up_toa_clear_g  = transpose(flux_up_top(:,:,1))
         flux%sw_div_clear       = sum(flux_div,2)
+      
+        if (config%do_save_spectral_flux) then
+          !$OMP PARALLEL DO PRIVATE(jcol)    
+          do jcol = 1,geometry%ncol
+              call indexed_sum_profile(flux_up_top(jcol,:,:), &
+                   &  config%i_band_from_reordered_g_sw, &
+                   &  flux%sw_up_clear_band(:,jcol,:))
+              call indexed_sum_profile(flux_dn_dir_top(jcol,:,:) * single_level%cos_sza(jcol),&!spread(single_level%cos_sza,2,geometry%nz+1), &
+                   &  config%i_band_from_reordered_g_sw, &
+                   &  flux%sw_dn_direct_clear_band(:,jcol,:))
+              call indexed_sum_profile(flux_dn_diff_top(jcol,:,:), &
+                   &  config%i_band_from_reordered_g_sw, &
+                   &  flux%sw_dn_clear_band(:,jcol,:))
+              flux%sw_dn_clear_band(:,jcol,:) = flux%sw_dn_clear_band(:,jcol,:) + flux%sw_dn_direct_clear_band(:,jcol,:)
+          end do
+          !$OMP END PARALLEL DO
+        end if
       else
         if (.not. allocated(single_level%solar_azimuth_angle)) then
           write(nulerr,'(a)') '*** Error: solar_azimuth_angle not provided'
@@ -201,6 +218,22 @@ contains
       flux%sw_dn_toa_g  = transpose(flux_dn_dir_top(:,:,1) * spread(single_level%cos_sza,2,config%n_g_sw))
       flux%sw_div       = sum(flux_div,2)
 
+      if (config%do_save_spectral_flux) then
+        !$OMP PARALLEL DO PRIVATE(jcol)    
+        do jcol = 1,geometry%ncol
+            call indexed_sum_profile(flux_up_top(jcol,:,:), &
+                 &  config%i_band_from_reordered_g_sw, &
+                 &  flux%sw_up_band(:,jcol,:))
+            call indexed_sum_profile(flux_dn_dir_top(jcol,:,:) * single_level%cos_sza(jcol),&!spread(single_level%cos_sza,2,geometry%nz+1), &
+                 &  config%i_band_from_reordered_g_sw, &
+                 &  flux%sw_dn_direct_band(:,jcol,:))
+            call indexed_sum_profile(flux_dn_diff_top(jcol,:,:), &
+                 &  config%i_band_from_reordered_g_sw, &
+                 &  flux%sw_dn_band(:,jcol,:))
+            flux%sw_dn_band(:,jcol,:) = flux%sw_dn_band(:,jcol,:) + flux%sw_dn_direct_band(:,jcol,:)
+        end do
+        !$OMP END PARALLEL DO
+      end if     
       ! Store surface downwelling, and TOA, fluxes in bands from
       ! fluxes in g points
       call flux%calc_surface_spectral(config, 1, geometry%ncol)

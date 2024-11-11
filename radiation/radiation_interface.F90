@@ -441,8 +441,13 @@ contains
         if (istartcol == 1 .and. iendcol == ncol) then
           rad_prop_file_name = rad_prop_base_file_name // ".nc"
         else
-          write(rad_prop_file_name,'(a,a,i4.4,a,i4.4,a)') &
-               &  rad_prop_base_file_name, '_', istartcol, '-',iendcol,'.nc'
+          if (config%skip_general_cloud_optics_delta_scaling) then
+            write(rad_prop_file_name,'(a,a,i6.6,a,i6.6,a)') &
+                 &  rad_prop_base_file_name, '_', istartcol, '-',iendcol,'_no_d-edd.nc'
+          else
+            write(rad_prop_file_name,'(a,a,i6.6,a,i6.6,a)') &
+                 &  rad_prop_base_file_name, '_', istartcol, '-',iendcol,'.nc'
+          end if
         end if
         call save_radiative_properties(trim(rad_prop_file_name), &
              &  nlev, istartcol, iendcol, &

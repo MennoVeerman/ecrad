@@ -323,6 +323,9 @@ module radiation_config
     ! scattering properties before merging with gases.  Note that
     ! .true. is not compatible with the SPARTACUS solver.
     logical :: do_sw_delta_scaling_with_gases = .false.
+    
+    ! Do we do any delta scaling at all?
+    logical :: skip_general_cloud_optics_delta_scaling = .false.
 
     ! Codes describing the gas model
     integer :: i_gas_model_sw = IGasModelIFSRRTMG
@@ -784,6 +787,7 @@ contains
     logical :: do_save_gpoint_flux, do_surface_sw_spectral_flux, do_toa_spectral_flux
     logical :: use_beta_overlap, do_lw_derivatives, use_vectorizable_generator
     logical :: do_sw_delta_scaling_with_gases
+    logical :: skip_general_cloud_optics_delta_scaling
     logical :: do_canopy_fluxes_sw, do_canopy_fluxes_lw
     logical :: use_canopy_full_spectrum_sw, use_canopy_full_spectrum_lw
     logical :: do_canopy_gases_sw, do_canopy_gases_lw
@@ -848,7 +852,7 @@ contains
          &  do_canopy_fluxes_sw, do_canopy_fluxes_lw, &
          &  do_canopy_gases_sw, do_canopy_gases_lw, &
          &  use_general_cloud_optics, use_general_aerosol_optics, &
-         &  do_sw_delta_scaling_with_gases, overlap_scheme_name, &
+         &  do_sw_delta_scaling_with_gases, skip_general_cloud_optics_delta_scaling, overlap_scheme_name, &
          &  sw_solver_name, lw_solver_name, use_beta_overlap, use_vectorizable_generator, &
          &  sw_quadrature_name, lw_quadrature_name, &
          &  use_expm_everywhere, iverbose, iverbosesetup, &
@@ -890,6 +894,7 @@ contains
     do_lw_aerosol_scattering = this%do_lw_aerosol_scattering
     do_lw_cloud_scattering = this%do_lw_cloud_scattering
     do_sw_delta_scaling_with_gases = this%do_sw_delta_scaling_with_gases
+    skip_general_cloud_optics_delta_scaling = this%skip_general_cloud_optics_delta_scaling
     do_fu_lw_ice_optics_bug = this%do_fu_lw_ice_optics_bug
     do_canopy_fluxes_sw = this%do_canopy_fluxes_sw
     do_canopy_fluxes_lw = this%do_canopy_fluxes_lw
@@ -1071,6 +1076,7 @@ contains
     this%do_surface_sw_spectral_flux = do_surface_sw_spectral_flux
     this%do_toa_spectral_flux = do_toa_spectral_flux
     this%do_sw_delta_scaling_with_gases = do_sw_delta_scaling_with_gases
+    this%skip_general_cloud_optics_delta_scaling = skip_general_cloud_optics_delta_scaling
     this%do_fu_lw_ice_optics_bug = do_fu_lw_ice_optics_bug
     this%do_canopy_fluxes_sw = do_canopy_fluxes_sw
     this%do_canopy_fluxes_lw = do_canopy_fluxes_lw
@@ -1707,6 +1713,10 @@ contains
         call print_logical('  Shortwave delta scaling after merge with gases', &
              &   'do_sw_delta_scaling_with_gases', &
              &   this%do_sw_delta_scaling_with_gases)
+        call print_logical('  Skipping delta scaling in general cloud optics', &
+             &   'skip_general_cloud_optics_delta_scaling', &
+             &   this%skip_general_cloud_optics_delta_scaling)
+
       else
         call print_logical('  Shortwave calculations are','do_sw',this%do_sw)
       end if

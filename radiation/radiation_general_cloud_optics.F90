@@ -316,7 +316,8 @@ contains
             if (od_lw_cloud(1,jlev,jcol) > 0.0_jprb) then
               ! Note that original cloud optics does not do
               ! delta-Eddington scaling for liquid clouds in longwave
-              if (SolverPhaseFuncMode(config%i_solver_lw) == IPhaseFuncAsymmetry) then
+              if (SolverPhaseFuncMode(config%i_solver_lw) == IPhaseFuncAsymmetry & 
+                   & .and. .not. config%skip_general_cloud_optics_delta_scaling) then
                 call delta_eddington_extensive(od_lw_cloud(:,jlev,jcol), &
                      &  ssa_lw_cloud(:,jlev,jcol), pf_lw_cloud(:,jlev,jcol,1))
               end if
@@ -337,6 +338,7 @@ contains
     ! Scale the combined shortwave optical properties
     if (config%do_sw) then
       if (.not. config%do_sw_delta_scaling_with_gases &
+           &  .and. .not. config%skip_general_cloud_optics_delta_scaling &
            &  .and. SolverPhaseFuncMode(config%i_solver_sw) == IPhaseFuncAsymmetry) then
         do jcol = istartcol, iendcol
           do jlev = 1,nlev
