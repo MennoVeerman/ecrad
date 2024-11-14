@@ -225,7 +225,7 @@ contains
     
     integer :: ix1(ncol), ix2(ncol), iy1(ncol), iy2(ncol)
 
-    !$OMP PARALLEL DO PRIVATE(jy,jx) 
+    !$OMP PARALLEL DO PRIVATE(jx,icol,dz_tan_zenith_angle) 
     do jy = 1,self%ny
       do jx = 1,self%nx
         icol = (jy-1)*self%nx + jx
@@ -272,7 +272,7 @@ contains
       !     iy2(jcol) = iy2(jcol)-self%ny
       !   end if
       ! end do
-      !$OMP PARALLEL DO PRIVATE(jcol) 
+      !$OMP PARALLEL DO
       do jcol = 1,self%ncol
         ix1(jcol) = modulo(ix1(jcol)-1, self%nx)+1
         ix2(jcol) = modulo(ix2(jcol)-1, self%nx)+1
@@ -284,7 +284,7 @@ contains
       error stop 'BC not understood'
     end if
 
-    !$OMP PARALLEL DO PRIVATE(jcol,jspec) 
+    !$OMP PARALLEL DO PRIVATE(jspec,icol11,icol12,icol21,icol22) 
     do jcol = 1,self%ncol
       icol11 = (iy1(jcol)-1)*self%nx + ix1(jcol)
       icol12 = (iy2(jcol)-1)*self%nx + ix1(jcol)
@@ -360,49 +360,43 @@ contains
       exchange_factor = diffusion_length_scale
     end if
     
+    !$OMP PARALLEL DO PRIVATE(jcol,scale,frac,iy,jex,field_tmp)
     do jspec = 1,nspec
       ! East-west diffusion
-      !$OMP PARALLEL DO PRIVATE(jcol)
       do jcol = 1,self%ncol
         frac = min(exchange_factor * self%dz(ilay) / (self%dx(jcol) * self%dx(jcol)), exchange_limit)
         field_tmp(jcol) = (1.0_jprb - frac) * field_in(jcol,jspec) &
              &          +  0.5_jprb * frac * (field_in(self%ieast(jcol),jspec) + field_in(self%iwest(jcol),jspec))
       end do
-      !$OMP END PARALLEL DO
       
       ! North-south diffusion
-      !$OMP PARALLEL DO PRIVATE(jcol)
       do jcol = 1,self%ncol
         iy = (jcol-1)/self%nx + 1
         frac = min(exchange_factor * self%dz(ilay) / (self%dy(iy) * self%dy(iy)), exchange_limit)
         field_out(jcol,jspec) = (1.0_jprb - frac) * field_tmp(jcol) &
              &                +  0.5_jprb * frac * (field_tmp(self%inorth(jcol)) + field_tmp(self%isouth(jcol)))
       end do
-      !$OMP END PARALLEL DO
 
       ! For two or more exchanges
       do jex = 2,n_exchange
         ! East-west diffusion
-        !$OMP PARALLEL DO PRIVATE(jcol)
         do jcol = 1,self%ncol
           frac = min(exchange_factor * self%dz(ilay) / (self%dx(jcol) * self%dx(jcol)), exchange_limit)
           field_tmp(jcol) = (1.0_jprb - frac) * field_out(jcol,jspec) &
                &          +  0.5_jprb * frac * (field_out(self%ieast(jcol),jspec) + field_out(self%iwest(jcol),jspec))
         end do
-        !$OMP END PARALLEL DO
         
         ! North-south diffusion
-        !$OMP PARALLEL DO PRIVATE(jcol)
         do jcol = 1,self%ncol
           iy = (jcol-1)/self%nx + 1
           frac = min(exchange_factor * self%dz(ilay) / (self%dy(iy) * self%dy(iy)), exchange_limit)
           field_out(jcol,jspec) = (1.0_jprb - frac) * field_tmp(jcol) &
                &                +  0.5_jprb * frac * (field_tmp(self%inorth(jcol)) + field_tmp(self%isouth(jcol)))
         end do
-        !$OMP END PARALLEL DO
       end do
       
     end do
+    !$OMP END PARALLEL DO
 
   end subroutine diffuse
 
