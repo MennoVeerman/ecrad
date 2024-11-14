@@ -79,6 +79,8 @@ contains
     if (lhook) call dr_hook('ecrad3d_solver_interface:solver_interface_sw',0,hook_handle)
 
     config3d%do_3d = config%do_3d_effects
+    
+    config3d%diffusion_length_scale = config%diffusion_length_scale
 
     if (config%i_solver_sw == ISolverPOMART3DTICA) then
       ! Pseudo Tilted Independent Column Approximation: use POMART

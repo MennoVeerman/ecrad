@@ -384,6 +384,7 @@ module radiation_config
 
     ! Do we include 3D effects?
     logical :: do_3d_effects = .true.
+    real(jprb) :: diffusion_length_scale = 1000.0_jprb
 
     ! Do we compute radiances for simulating satellite or surface
     ! radiometer observations, instead of fluxes?  Only available in
@@ -799,7 +800,7 @@ contains
     real(jprb):: clear_to_thick_fraction, max_gas_od_3d, max_cloud_od
     real(jprb):: cloud_mixing_ratio_threshold, overhead_sun_factor
     real(jprb):: max_3d_transfer_rate, min_cloud_effective_size
-    real(jprb):: overhang_factor, encroachment_scaling
+    real(jprb):: overhang_factor, encroachment_scaling, diffusion_length_scale
     character(511) :: directory_name, aerosol_optics_override_file_name
     character(511) :: liq_optics_override_file_name, ice_optics_override_file_name
     character(511) :: cloud_pdf_override_file_name
@@ -843,7 +844,7 @@ contains
          &  gas_optics_sw_override_file_name, gas_optics_lw_override_file_name, &
          &  ssi_override_file_name, &
          &  liquid_model_name, ice_model_name, max_3d_transfer_rate, &
-         &  min_cloud_effective_size, overhang_factor, encroachment_scaling, &
+         &  min_cloud_effective_size, overhang_factor, encroachment_scaling, diffusion_length_scale, &
          &  use_canopy_full_spectrum_sw, use_canopy_full_spectrum_lw, &
          &  do_canopy_fluxes_sw, do_canopy_fluxes_lw, &
          &  do_canopy_gases_sw, do_canopy_gases_lw, &
@@ -935,6 +936,7 @@ contains
 
     overhang_factor = this%overhang_factor
     encroachment_scaling = -1.0_jprb
+    diffusion_length_scale = this%diffusion_length_scale
     gas_model_name = '' !DefaultGasModelName
     sw_gas_model_name = '' !DefaultGasModelName
     lw_gas_model_name = '' !DefaultGasModelName
@@ -1104,6 +1106,7 @@ contains
     else
       this%overhang_factor = overhang_factor
     end if
+    this%diffusion_length_scale = diffusion_length_scale
     this%directory_name = directory_name
     this%cloud_pdf_override_file_name = cloud_pdf_override_file_name
     this%liq_optics_override_file_name = liq_optics_override_file_name

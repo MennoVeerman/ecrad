@@ -205,8 +205,8 @@ contains
       ! Horizontal "diffusion"
       if (jl > 1) then
         if (config%do_3d .and. .not. config%do_3d_direct_only) then
-          call geometry%diffuse(ncol, nspec, jl, albedo_top, albedo_base(:,:,jl-1))
-          call geometry%diffuse(ncol, nspec, jl, source_top, source_base(:,:,jl-1))
+          call geometry%diffuse(ncol, nspec, jl, config%diffusion_length_scale, albedo_top, albedo_base(:,:,jl-1))
+          call geometry%diffuse(ncol, nspec, jl, config%diffusion_length_scale, source_top, source_base(:,:,jl-1))
         else
           do js = 1,nspec
             albedo_base(:,js,jl-1) = albedo_top(:,js)
@@ -268,7 +268,7 @@ contains
       
       ! Horizontal "diffusion"
       if (config%do_3d .and. (.not. config%do_3d_direct_only) .and. jl < nlay) then
-        call geometry%diffuse(ncol, nspec, jl, flux_dn_diff_base_layer, flux_dn_diff_top(:,:,jl+1))
+        call geometry%diffuse(ncol, nspec, jl, config%diffusion_length_scale, flux_dn_diff_base_layer, flux_dn_diff_top(:,:,jl+1))
       else
         ! This is also done at surface to ensure that
         ! flux_dn_diff_top(:,:,nlay+1) contains the surface value

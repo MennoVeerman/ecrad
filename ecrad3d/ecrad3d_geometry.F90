@@ -310,7 +310,7 @@ contains
 
   end subroutine advect
 
-  subroutine diffuse(self, ncol, nspec, ilay, field_in, field_out)
+  subroutine diffuse(self, ncol, nspec, ilay, diffusion_length_scale, field_in, field_out)
 
     implicit none
     
@@ -328,41 +328,43 @@ contains
 
     ! We find that using a diffusion mean-free path of 2*dz/dx results
     ! in the best agreement with Monte-Carlo calculations
-    real(jprb), parameter :: DiffusionFactor = 2.0_jprb
-
+    real(jprb), intent(in) :: diffusion_length_scale
+    
     ! We don't do a full Gaussian convolution for the diffusion but
     ! one or two neighbour exchanges, and must limit how much is exchanged
     integer    :: n_exchange
     real(jprb) :: exchange_limit
     real(jprb) :: exchange_factor
-    real(jprb) :: max_aspect
-    
+    real(jprb) :: max_scale
+    real(jprb) :: sqrt_diffusion_length_scale
     real(jprb), parameter :: TwoThirds = 2.0_jprb / 3.0_jprb
     
     integer :: jcol, jspec, jex, iy
 
-    max_aspect = maxval(self%dz(ilay)/self%dx(1:self%ncol))
-    
+    sqrt_diffusion_length_scale = sqrt(diffusion_length_scale)
+
+    ! gaussian smoothing scale: sigma = sqrt(dz * diffusion_length_scale) / dx
+    max_scale = maxval((sqrt(self%dz(ilay)) * sqrt_diffusion_length_scale) / self%dx(1:self%ncol))
+
     ! Decide whether to do one or more exchanges, and in each case how
     ! much to exchange and the limit on the exchange
-    if (max_aspect > sqrt(TwoThirds)/DiffusionFactor) then
+    if ( (max_scale) > sqrt(TwoThirds)) then
       ! Check the following!
-      n_exchange = min(50, ceiling((5.0_jprb/4.0_jprb) &
-           &  * (DiffusionFactor*DiffusionFactor*max_aspect*max_aspect)))
+      n_exchange = min(250, ceiling((5.0_jprb/4.0_jprb) &
+           &  * (max_scale * max_scale)))
       exchange_limit = 0.8_jprb
-      exchange_factor = DiffusionFactor / sqrt(real(n_exchange,jprb))
+      exchange_factor = diffusion_length_scale / real(n_exchange, jprb)
     else
       n_exchange = 1
       exchange_limit = TwoThirds
-      exchange_factor = DiffusionFactor
+      exchange_factor = diffusion_length_scale
     end if
     
     do jspec = 1,nspec
       ! East-west diffusion
       !$OMP PARALLEL DO PRIVATE(jcol)
       do jcol = 1,self%ncol
-        scale = exchange_factor * self%dz(ilay) / self%dx(jcol)
-        frac  = min(scale*scale, exchange_limit)
+        frac = min(exchange_factor * self%dz(ilay) / (self%dx(jcol) * self%dx(jcol)), exchange_limit)
         field_tmp(jcol) = (1.0_jprb - frac) * field_in(jcol,jspec) &
              &          +  0.5_jprb * frac * (field_in(self%ieast(jcol),jspec) + field_in(self%iwest(jcol),jspec))
       end do
@@ -372,8 +374,7 @@ contains
       !$OMP PARALLEL DO PRIVATE(jcol)
       do jcol = 1,self%ncol
         iy = (jcol-1)/self%nx + 1
-        scale = exchange_factor * self%dz(ilay) / self%dy(iy)
-        frac  = min(scale*scale, exchange_limit)
+        frac = min(exchange_factor * self%dz(ilay) / (self%dy(iy) * self%dy(iy)), exchange_limit)
         field_out(jcol,jspec) = (1.0_jprb - frac) * field_tmp(jcol) &
              &                +  0.5_jprb * frac * (field_tmp(self%inorth(jcol)) + field_tmp(self%isouth(jcol)))
       end do
@@ -384,8 +385,7 @@ contains
         ! East-west diffusion
         !$OMP PARALLEL DO PRIVATE(jcol)
         do jcol = 1,self%ncol
-          scale = exchange_factor * self%dz(ilay) / self%dx(jcol)
-          frac  = min(scale*scale, exchange_limit)
+          frac = min(exchange_factor * self%dz(ilay) / (self%dx(jcol) * self%dx(jcol)), exchange_limit)
           field_tmp(jcol) = (1.0_jprb - frac) * field_out(jcol,jspec) &
                &          +  0.5_jprb * frac * (field_out(self%ieast(jcol),jspec) + field_out(self%iwest(jcol),jspec))
         end do
@@ -395,8 +395,7 @@ contains
         !$OMP PARALLEL DO PRIVATE(jcol)
         do jcol = 1,self%ncol
           iy = (jcol-1)/self%nx + 1
-          scale = exchange_factor * self%dz(ilay) / self%dy(iy)
-          frac  = min(scale*scale, exchange_limit)
+          frac = min(exchange_factor * self%dz(ilay) / (self%dy(iy) * self%dy(iy)), exchange_limit)
           field_out(jcol,jspec) = (1.0_jprb - frac) * field_tmp(jcol) &
                &                +  0.5_jprb * frac * (field_tmp(self%inorth(jcol)) + field_tmp(self%isouth(jcol)))
         end do
