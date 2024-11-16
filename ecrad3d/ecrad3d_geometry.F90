@@ -92,9 +92,9 @@ contains
       
       ! Compute average layer thickness
       allocate(self%dz(self%nz))    
-      mean_height_base = sum(self%height_hl(:,self%nz+1))/self%ncol
+      mean_height_base = sum(dble(self%height_hl(:,self%nz+1)))/self%ncol
       do jlev = self%nz,1,-1
-        mean_height_top = sum(self%height_hl(:,jlev))/self%ncol
+        mean_height_top = sum(dble(self%height_hl(:,jlev)))/self%ncol
         self%dz(jlev) = mean_height_top-mean_height_base
         mean_height_base = mean_height_top
       end do
@@ -321,7 +321,6 @@ contains
     real(jprb), intent(out) :: field_out(ncol,nspec)
 
     ! 1-sigma smoothing scale in units of horizontal pixels
-    real(jprb) :: scale
     real(jprb) :: frac
 
     real(jprb) :: field_tmp(ncol)
@@ -336,19 +335,16 @@ contains
     real(jprb) :: exchange_limit
     real(jprb) :: exchange_factor
     real(jprb) :: max_scale
-    real(jprb) :: sqrt_diffusion_length_scale
     real(jprb), parameter :: TwoThirds = 2.0_jprb / 3.0_jprb
     
     integer :: jcol, jspec, jex, iy
 
-    sqrt_diffusion_length_scale = sqrt(diffusion_length_scale)
-
     ! gaussian smoothing scale: sigma = sqrt(dz * diffusion_length_scale) / dx
-    max_scale = maxval((sqrt(self%dz(ilay)) * sqrt_diffusion_length_scale) / self%dx(1:self%ncol))
+    max_scale = maxval((sqrt(self%dz(ilay) * diffusion_length_scale)) / self%dx(1:self%ncol))
 
     ! Decide whether to do one or more exchanges, and in each case how
     ! much to exchange and the limit on the exchange
-    if ( (max_scale) > sqrt(TwoThirds)) then
+    if ( max_scale > sqrt(TwoThirds)) then
       ! Check the following!
       n_exchange = min(250, ceiling((5.0_jprb/4.0_jprb) &
            &  * (max_scale * max_scale)))
@@ -360,7 +356,7 @@ contains
       exchange_factor = diffusion_length_scale
     end if
     
-    !$OMP PARALLEL DO PRIVATE(jcol,scale,frac,iy,jex,field_tmp)
+    !$OMP PARALLEL DO PRIVATE(jcol,frac,iy,jex,field_tmp)
     do jspec = 1,nspec
       ! East-west diffusion
       do jcol = 1,self%ncol
