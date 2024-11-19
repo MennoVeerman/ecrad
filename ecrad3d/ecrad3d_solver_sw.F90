@@ -154,22 +154,17 @@ contains
       !$OMP END PARALLEL DO
 
       ! Horizontal "advection"
-      if (jl < nlay) then
-        if (config%do_3d .and. jl >= local_first_direct_3d_layer) then
-          !print *,'Advecting'
-          call geometry%advect(ncol, nspec, jl, cos_sza, solar_azim, &
-               &               flux_dn_dir_base_layer, flux_dn_dir_top(:,:,jl+1))
-        else
-          do js = 1,nspec
-            flux_dn_dir_top(:,js,jl+1) = flux_dn_dir_base_layer(:,js)
-          end do
-        end if
+      if (config%do_3d .and. jl >= local_first_direct_3d_layer) then
+        !print *,'Advecting'
+        call geometry%advect(ncol, nspec, jl, cos_sza, solar_azim, &
+             &               flux_dn_dir_base_layer, flux_dn_dir_top(:,:,jl+1))
+      else
+        do js = 1,nspec
+          flux_dn_dir_top(:,js,jl+1) = flux_dn_dir_base_layer(:,js)
+        end do
       end if
 
     end do
-
-    ! Store surface direct flux
-    flux_dn_dir_top(:,:,nlay+1) = flux_dn_dir_base_layer
     
     ! Assign values at the surface
     do js = 1,nspec
