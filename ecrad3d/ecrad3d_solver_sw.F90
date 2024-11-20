@@ -169,7 +169,7 @@ contains
     ! Assign values at the surface
     do js = 1,nspec
       do jc = 1,ncol
-        source_base(jc,js,nlay) = flux_dn_dir_base_layer(jc,js) &
+        source_base(jc,js,nlay) = flux_dn_dir_top(jc,js,nlay+1) &
              &  * surf_albedo_dir(jc,js) * cos_sza(jc)
         albedo_base(jc,js,nlay) = surf_albedo_diff(jc,js)
       end do
