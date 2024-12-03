@@ -264,9 +264,9 @@ contains
       ! and column
       allocate(single_level%cos_sza(ncol))
       single_level%cos_sza &
-           &  = sin(driver_config%solar_latitude*PI_OVER_180) * sin(latitude*PI_OVER_180) &
+           &  = max(0.0_jprb, sin(driver_config%solar_latitude*PI_OVER_180) * sin(latitude*PI_OVER_180) &
            &  + cos(driver_config%solar_latitude*PI_OVER_180) * cos(latitude*PI_OVER_180) &
-           &  * cos((longitude - driver_config%solar_longitude)*PI_OVER_180)
+           &  * cos((longitude - driver_config%solar_longitude)*PI_OVER_180))
     else if (file%exists('cos_solar_zenith_angle')) then
       ! Single-level variables, all with dimensions (ncol)
       call get_1d(file,geometry,'cos_solar_zenith_angle',single_level%cos_sza)
